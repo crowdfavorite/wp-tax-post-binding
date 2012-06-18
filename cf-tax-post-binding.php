@@ -4,7 +4,7 @@
  * Plugin URI: http://crowdfavorite.com
  * Description: Provides extended functionality for taxonomies such as post meta and featured image
  * 	through creating a custom post type.
- * Version: 0.1
+ * Version: 1.0
  * Author: Crowd Favorite
  * Author URI: http://crowdfavorite.com
  */
