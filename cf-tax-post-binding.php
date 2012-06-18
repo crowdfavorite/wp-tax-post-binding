@@ -240,7 +240,7 @@ class cf_taxonomy_post_type_binding {
 		}
 	}
 	
-	public static function on_admin_head() {
+	public static function on_admin_head_post() {
 		global $current_screen;
 		$connection_settings = array();
 		foreach (self::$taxonomies as $record) {
@@ -281,6 +281,35 @@ class cf_taxonomy_post_type_binding {
 				$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
 				$('a.edit-slug').remove();
 				<?php } ?>
+			});
+		</script>
+		<?php
+	}
+	
+	public static function on_admin_head_edit() {
+		global $current_screen;
+		$connection_settings = array();
+		foreach (self::$taxonomies as $record) {
+			if ($record['post_type'] == $current_screen->post_type) {
+				$connection_settings = $record;
+				break;
+			}
+		}
+		if (empty($connection_settings)) {
+			return;
+		}
+		?>
+		<style type="text/css">
+			div.actions,
+			.add-new-h2,
+			.row-actions .inline,
+			.row-actions .trash {
+				display: none;
+			}
+		</style>
+		<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				$('div.actions, .add-new-h2, .row-actions .inline, .row-actions .trash').remove();
 			});
 		</script>
 		<?php
@@ -448,7 +477,8 @@ class cf_taxonomy_post_type_binding {
 	}
 }
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
-add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head');
+add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head_post');
+add_action('admin_head-edit.php', 'cf_taxonomy_post_type_binding::on_admin_head_edit');
 add_action('created_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
 add_action('edit_term', 'cf_taxonomy_post_type_binding::on_edit_term', 10, 3);
 add_action('edited_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
