@@ -231,9 +231,59 @@ class cf_taxonomy_post_type_binding {
 					do_action('cftpb_register_taxonomy', $config['taxonomy'][0], $config);
 				}
 				
-				self::$taxonomies[$tax_name] = $post_type;
+				self::$taxonomies[$tax_name] = array(
+					'post_type' => $post_type,
+					'slave_title_editable' => (isset($config['slave_title_editable'])) ? $config['slave_title_editable'] : false,
+					'slave_slug_editable' => (isset($config['slave_slug_editable'])) ? $config['slave_slug_editable'] : false
+				);
 			}
 		}
+	}
+	
+	public static function on_admin_head() {
+		global $current_screen;
+		$connection_settings = array();
+		foreach (self::$taxonomies as $record) {
+			if ($record['post_type'] == $current_screen->post_type) {
+				$connection_settings = $record;
+				break;
+			}
+		}
+		if (empty($connection_settings)) {
+			return;
+		}
+		?>
+		<style type="text/css">
+			.add-new-h2,
+			#minor-publishing,
+			#delete-action,
+			#publishing-action #ajax-loading {
+				display: none;
+			}
+			#major-publishing-actions #publishing-action {
+				float: left;
+			}
+			.disabled {
+				color: #666666 !important;
+				background-color:#CCCCCC !important;
+			}
+		</style>
+		<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				$('.add-new-h2, #minor-publishing, #delete-action').remove();
+				$('select#parent_id').addClass('disabled').prop('disabled', true);
+				<?php if (!$connection_settings['slave_title_editable']) { ?>
+				$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
+				<?php
+				}
+				if (!$connection_settings['slave_slug_editable']) {
+				?>
+				$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
+				$('a.edit-slug').remove();
+				<?php } ?>
+			});
+		</script>
+		<?php
 	}
 	
 	public static function on_edit_term($term_id, $tt_id, $taxonomy) {
@@ -241,8 +291,12 @@ class cf_taxonomy_post_type_binding {
 	}
 	
 	public static function on_edited_term($term_id, $tt_id, $taxonomy) {
+		if (!self::supports($taxonomy)) {
+			return;
+		}
 		$post = self::get_term_post($term_id, $taxonomy);
 		$term = get_term($term_id, $taxonomy);
+		$connection_settings = self::$taxonomies[$taxonomy];
 		if (empty($term) || is_wp_error($term)) {
 			trigger_error(sprintf(__('Could not retrieve term "%1$d" for taxonomy "%1$s"', 'cf-tax-post-binding'), $term_id, $taxonomy), E_USER_WARNING);
 			return;
@@ -255,9 +309,18 @@ class cf_taxonomy_post_type_binding {
 			// Update the post
 			$old_term = self::$term_before;
 			$update_post['ID'] = $post->ID;
-			$update_post['post_title'] = ($old_term->name == $post->post_title) ? $term->name : $post->post_title;
-			$update_post['post_name'] = ($old_term->slug == $post->post_name) ? $term->slug : $post->post_name;
-			$update_post['post_excerpt'] = ($old_term->description == $post->post_excerpt) ? $term->description : $post->post_excerpt;
+			if ($connection_settings['slave_title_editable']) {
+				$update_post['post_title'] = ($old_term->name == $post->post_title) ? $term->name : $post->post_title;
+			}
+			else {
+				$update_post['post_title'] = $term->name;
+			}
+			if ($connection_settings['slave_slug_editable']) {
+				$update_post['post_name'] = ($old_term->slug == $post->post_name) ? $term->slug : $post->post_name;
+			}
+			else {
+				$update_post['post_name'] = $term->slug;
+			}
 			if (!empty($term->parent)) {
 				// We need to set the post parent
 				$parent_post = self::get_term_post($term->parent, 'category');
@@ -275,7 +338,6 @@ class cf_taxonomy_post_type_binding {
 				'post_status' => 'publish',
 				'post_title' => $term->name,
 				'post_name' => $term->slug,
-				'post_excerpt' => $term->description,
 			);
 			if (!empty($term->parent)) {
 				// We need to set the post parent
@@ -292,6 +354,28 @@ class cf_taxonomy_post_type_binding {
 		self::$term_before = null;
 	}
 	
+	public static function on_edited_term_taxonomies($tt_ids) {
+		global $wpdb;
+		if (!empty($tt_ids) && is_array($tt_ids)) {
+			$tt_records = $wpdb->get_results('SELECT term_id, taxonomy, parent FROM '.$wpdb->term_taxonomy.' WHERE term_taxonomy_id IN ('.implode(',', $tt_ids).')', ARRAY_A);
+			if (!empty($tt_records) && !is_wp_error($tt_records)) {
+				$parent_post = self::get_term_post($tt_records[0]['parent'], $tt_records[0]['taxonomy']);
+				if (empty($parent_post) || is_wp_error($parent_post)) {
+					return;
+				}
+				foreach ($tt_records as $record) {
+					$my_post = self::get_term_post($record['term_id'], $record['taxonomy']);
+					if (!empty($my_post) && !is_wp_error($my_post)) {
+						$update_record = array();
+						$update_record['ID'] = $my_post->ID;
+						$update_record['post_parent'] = $parent_post->ID;
+						wp_update_post($update_record);
+					}
+				}
+			}
+		}
+	}
+	
 	public static function on_delete_term($term_id, $tt_id, $taxonomy) {
 		$post = self::get_term_post($term_id, $taxonomy);
 		if (is_wp_error($post)) {
@@ -303,7 +387,6 @@ class cf_taxonomy_post_type_binding {
 			return;
 		}
 		else {
-			$post = $post[0];
 			wp_delete_post($post->ID, true);
 		}
 	}
@@ -361,12 +444,14 @@ class cf_taxonomy_post_type_binding {
 	}
 	
 	public static function supports($taxonomy) {
-		return isset(self::$taxonomies[$taxonomy]) ? self::$taxonomies[$taxonomy] : null;
+		return isset(self::$taxonomies[$taxonomy]) ? self::$taxonomies[$taxonomy]['post_type'] : null;
 	}
 }
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
+add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head');
 add_action('created_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
 add_action('edit_term', 'cf_taxonomy_post_type_binding::on_edit_term', 10, 3);
 add_action('edited_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
+add_action('edited_term_taxonomies', 'cf_taxonomy_post_type_binding::on_edited_term_taxonomies', 10, 1);
 add_action('delete_term', 'cf_taxonomy_post_type_binding::on_delete_term', 10, 3);
 add_filter('tag_row_actions', 'cf_taxonomy_post_type_binding::on_tag_row_actions', 10, 2);

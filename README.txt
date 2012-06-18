@@ -9,5 +9,4 @@ $config = array(
 	),
 	'slave_title_editable' => false,
 	'slave_slug_editable' => false,
-	'master' => 'taxonomy|post_type',
 );
