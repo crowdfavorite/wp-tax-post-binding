@@ -257,41 +257,45 @@ class cf_taxonomy_post_type_binding {
 			return;
 		}
 ?>
-		<style type="text/css">
-			.add-new-h2,
-			#minor-publishing,
-			#delete-action,
-			#publishing-action #ajax-loading {
-				display: none;
-			}
-			#major-publishing-actions #publishing-action {
-				float: left;
-			}
-			.disabled {
-				color: #666666 !important;
-				background-color:#CCCCCC !important;
-			}
-		</style>
-		<script type="text/javascript">
-			jQuery(document).ready(function($) {
-				$('.add-new-h2, #minor-publishing, #delete-action').remove();
-				$('select#parent_id').addClass('disabled').prop('disabled', true);
+<style type="text/css">
+.add-new-h2,
+#minor-publishing,
+#delete-action,
+#publishing-action #ajax-loading {
+	display: none;
+}
+#major-publishing-actions #publishing-action {
+	float: left;
+}
+#title.disabled {
+	border: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+#edit-slug-box {
+	padding-left: 0 !important;
+}
+</style>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	$('.add-new-h2, #minor-publishing, #delete-action').remove();
+	$('select#parent_id').addClass('disabled').prop('disabled', true);
 <?php
 		if (!$connection_settings['slave_title_editable']) {
 ?>
-				$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
+	$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
 <?php
 		}
 		if (!$connection_settings['slave_slug_editable']) {
 ?>
-				$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
-				$('a.edit-slug').remove();
+	$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
+	$('a.edit-slug').remove();
 <?php
 		}
 ?>
-			});
-		</script>
-		<?php
+});
+</script>
+<?php
 	}
 	
 	public static function on_admin_head_edit() {
@@ -307,19 +311,19 @@ class cf_taxonomy_post_type_binding {
 			return;
 		}
 ?>
-		<style type="text/css">
-			div.actions,
-			.add-new-h2,
-			.row-actions .inline,
-			.row-actions .trash {
-				display: none;
-			}
-		</style>
-		<script type="text/javascript">
-			jQuery(document).ready(function($) {
-				$('div.actions, .add-new-h2, .row-actions .inline, .row-actions .trash').remove();
-			});
-		</script>
+<style type="text/css">
+div.actions,
+.add-new-h2,
+.row-actions .inline,
+.row-actions .trash {
+	display: none;
+}
+</style>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	$('div.actions, .add-new-h2, .row-actions .inline, .row-actions .trash').remove();
+});
+</script>
 <?php
 	}
 	
