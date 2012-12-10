@@ -9,6 +9,10 @@
  * Author URI: http://crowdfavorite.com
  */
 
+if (!defined('CF_TAX_POST_BINDING')) {
+
+define('CF_TAX_POST_BINDING', true);
+
 load_plugin_textdomain('cf-tax-post-binding');
 
 function cftpb_get_post($term_id, $taxonomy) {
@@ -252,7 +256,7 @@ class cf_taxonomy_post_type_binding {
 		if (empty($connection_settings)) {
 			return;
 		}
-		?>
+?>
 		<style type="text/css">
 			.add-new-h2,
 			#minor-publishing,
@@ -272,15 +276,19 @@ class cf_taxonomy_post_type_binding {
 			jQuery(document).ready(function($) {
 				$('.add-new-h2, #minor-publishing, #delete-action').remove();
 				$('select#parent_id').addClass('disabled').prop('disabled', true);
-				<?php if (!$connection_settings['slave_title_editable']) { ?>
+<?php
+		if (!$connection_settings['slave_title_editable']) {
+?>
 				$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
-				<?php
-				}
-				if (!$connection_settings['slave_slug_editable']) {
-				?>
+<?php
+		}
+		if (!$connection_settings['slave_slug_editable']) {
+?>
 				$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
 				$('a.edit-slug').remove();
-				<?php } ?>
+<?php
+		}
+?>
 			});
 		</script>
 		<?php
@@ -298,7 +306,7 @@ class cf_taxonomy_post_type_binding {
 		if (empty($connection_settings)) {
 			return;
 		}
-		?>
+?>
 		<style type="text/css">
 			div.actions,
 			.add-new-h2,
@@ -312,7 +320,7 @@ class cf_taxonomy_post_type_binding {
 				$('div.actions, .add-new-h2, .row-actions .inline, .row-actions .trash').remove();
 			});
 		</script>
-		<?php
+<?php
 	}
 	
 	public static function on_edit_term($term_id, $tt_id, $taxonomy) {
@@ -485,3 +493,5 @@ add_action('edited_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3
 add_action('edited_term_taxonomies', 'cf_taxonomy_post_type_binding::on_edited_term_taxonomies', 10, 1);
 add_action('delete_term', 'cf_taxonomy_post_type_binding::on_delete_term', 10, 3);
 add_filter('tag_row_actions', 'cf_taxonomy_post_type_binding::on_tag_row_actions', 10, 2);
+
+} // end loaded check
