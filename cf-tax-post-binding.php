@@ -131,6 +131,14 @@ function cftpb_get_the_term_thumbnail($term_id, $taxonomy, $size = 'post-thumbna
 	return $return_val;
 }
 
+function cftpb_get_term_id($tax_slug, $post_id = null) {
+	if (is_null($post_id)) {
+		global $post;
+		$post_id = $post->ID;
+	}
+	return get_post_meta($post_id, '_cf-tax-post-binding_'.$tax_slug, true);
+}
+
 class cf_taxonomy_post_type_binding {
 	private static $taxonomies;
 	private static $current_term_post;
@@ -205,6 +213,8 @@ class cf_taxonomy_post_type_binding {
 				
 				// Register the custom post type if it doesn't exist and information was passed to create it.
 				if (empty($post_type) && is_array($config['post_type'])) {
+					global $CFTPB_ENABLED_POST_TYPES;
+					$CFTPB_ENABLED_POST_TYPES[] = $config['post_type'][0];
 					register_post_type($config['post_type'][0], $config['post_type'][1]);
 					if (!empty($tax_name)) {
 						if (!isset($config['post_type'][1]['hierarchical'])) {
@@ -242,6 +252,23 @@ class cf_taxonomy_post_type_binding {
 				);
 			}
 		}
+	}
+	
+	public static function on_admin_head() {
+		global $CFTPB_ENABLED_POST_TYPES;
+		if (!empty($CFTPB_ENABLED_POST_TYPES)) {
+			$sel = array();
+			foreach ($CFTPB_ENABLED_POST_TYPES as $post_type) {
+				$sel[] = 'a[href*="post-new.php?post_type='.$post_type.'"]';
+			}
+		}
+?>
+<script type="text/javascript">
+jQuery(function ($) {
+	$('<?php echo implode(', ', $sel); ?>').remove();
+});
+</script>
+<?php
 	}
 	
 	public static function on_admin_head_post() {
@@ -489,6 +516,7 @@ jQuery(document).ready(function($) {
 	}
 }
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
+add_action('admin_head', 'cf_taxonomy_post_type_binding::on_admin_head');
 add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head_post');
 add_action('admin_head-edit.php', 'cf_taxonomy_post_type_binding::on_admin_head_edit');
 add_action('created_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
