@@ -215,7 +215,6 @@ class cf_taxonomy_post_type_binding {
 				if (empty($post_type) && is_array($config['post_type'])) {
 					global $CFTPB_ENABLED_POST_TYPES;
 					$CFTPB_ENABLED_POST_TYPES[] = $config['post_type'][0];
-					register_post_type($config['post_type'][0], $config['post_type'][1]);
 					if (!empty($tax_name)) {
 						if (!isset($config['post_type'][1]['hierarchical'])) {
 							$config['post_type'][1]['hierarchical'] = is_taxonomy_hierarchical($tax_name);
@@ -233,6 +232,7 @@ class cf_taxonomy_post_type_binding {
 							continue;
 						}
 					}
+					register_post_type($config['post_type'][0], $config['post_type'][1]);
 					do_action('cftpb_register_post_type', $config['post_type'][0], $config);
 					$post_type = $config['post_type'][0];
 				}
