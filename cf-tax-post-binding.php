@@ -4,7 +4,7 @@
  * Plugin URI: http://crowdfavorite.com
  * Description: Provides extended functionality for taxonomies such as post meta and featured image
  * 	through creating a custom post type.
- * Version: 1.0
+ * Version: 1.1
  * Author: Crowd Favorite
  * Author URI: http://crowdfavorite.com
  */
@@ -447,11 +447,11 @@ jQuery(document).ready(function($) {
 	public static function on_delete_term($term_id, $tt_id, $taxonomy) {
 		$post = self::get_term_post($term_id, $taxonomy);
 		if (is_wp_error($post)) {
-			trigger_error(sprintf(__('Error retrieving post for term "%1$d" in taxonomy "%2$s"', 'cf-tax-post-binding'), $term_id, $taxonomy), E_USER_WARNING);
+			trigger_error(sprintf(__('Error retrieving post for term "%1$d" in taxonomy "%2$s"', 'cf-tax-post-binding'), esc_html($term_id), esc_html($taxonomy)), E_USER_WARNING);
 			return;
 		}
 		else if (empty($post)) {
-			trigger_error(sprintf(__('Could not find post for term "%1$s" in taxonomy "%2$s"', 'cf-tax-post-binding'), $term_id, $taxonomy), E_USER_WARNING);
+			trigger_error(sprintf(__('Could not find post for term "%1$s" in taxonomy "%2$s"', 'cf-tax-post-binding'), esc_html($term_id), esc_html($taxonomy)), E_USER_WARNING);
 			return;
 		}
 		else {
@@ -462,21 +462,24 @@ jQuery(document).ready(function($) {
 	public static function on_tag_row_actions($actions, $tag) {
 		global $taxonomy, $tax;
 		$post = self::get_term_post($tag->term_id, $taxonomy);
-		if (!empty($post) && !is_wp_error($post) && current_user_can($tax->cap->edit_terms)) {
-			if (empty($actions['edit-term-post'])) {
-				$actions['edit-term-post'] = '';
-			}
-			$actions['edit-term-post'] .= '<a href="' . get_edit_post_link($post->ID) . '">' . esc_html(__('Edit Term Post', 'cf-tax-post-binding')) . '</a>';
+		if (empty($post) || is_wp_error($post)) {
+			return $actions;
 		}
+		if (empty($actions['term-post'])) {
+			$actions['term-post'] = '';
+		}
+		if (current_user_can($tax->cap->edit_terms)) {
+			$actions['term-post'] .= '<a href="'.esc_url(get_edit_post_link($post->ID)).'">'.__('Edit Term Post', 'cf-tax-post-binding').'</a> | ';
+		}
+		$actions['term-post'] .= '<a href="'.esc_url(get_permalink($post->ID)).'">'.__('View Term Post', 'cf-tax-post-binding').'</a>';
 		return $actions;
 	}
 	
 	public static function get_term_post($term_id, $taxonomy) {
 		$return_val = null;
-		if (
-			   self::$current_term_post
-			&& self::$current_term_post['term_id'] == $term_id
-			&& self::$current_term_post['taxonomy'] == $taxonomy
+		if (self::$current_term_post && 
+			self::$current_term_post['term_id'] == $term_id &&
+			self::$current_term_post['taxonomy'] == $taxonomy
 		) {
 			$return_val = self::$current_term_post['post'];
 		}
