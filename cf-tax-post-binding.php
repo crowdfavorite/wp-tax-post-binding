@@ -4,10 +4,14 @@
  * Plugin URI: http://crowdfavorite.com
  * Description: Provides extended functionality for taxonomies such as post meta and featured image
  * 	through creating a custom post type.
- * Version: 1.0
+ * Version: 1.1
  * Author: Crowd Favorite
  * Author URI: http://crowdfavorite.com
  */
+
+if (!defined('CF_TAX_POST_BINDING')) {
+
+define('CF_TAX_POST_BINDING', true);
 
 load_plugin_textdomain('cf-tax-post-binding');
 
@@ -127,6 +131,14 @@ function cftpb_get_the_term_thumbnail($term_id, $taxonomy, $size = 'post-thumbna
 	return $return_val;
 }
 
+function cftpb_get_term_id($tax_slug, $post_id = null) {
+	if (is_null($post_id)) {
+		global $post;
+		$post_id = $post->ID;
+	}
+	return get_post_meta($post_id, '_cf-tax-post-binding_'.$tax_slug, true);
+}
+
 class cf_taxonomy_post_type_binding {
 	private static $taxonomies;
 	private static $current_term_post;
@@ -201,7 +213,8 @@ class cf_taxonomy_post_type_binding {
 				
 				// Register the custom post type if it doesn't exist and information was passed to create it.
 				if (empty($post_type) && is_array($config['post_type'])) {
-					register_post_type($config['post_type'][0], $config['post_type'][1]);
+					global $CFTPB_ENABLED_POST_TYPES;
+					$CFTPB_ENABLED_POST_TYPES[] = $config['post_type'][0];
 					if (!empty($tax_name)) {
 						if (!isset($config['post_type'][1]['hierarchical'])) {
 							$config['post_type'][1]['hierarchical'] = is_taxonomy_hierarchical($tax_name);
@@ -219,6 +232,7 @@ class cf_taxonomy_post_type_binding {
 							continue;
 						}
 					}
+					register_post_type($config['post_type'][0], $config['post_type'][1]);
 					do_action('cftpb_register_post_type', $config['post_type'][0], $config);
 					$post_type = $config['post_type'][0];
 				}
@@ -241,6 +255,23 @@ class cf_taxonomy_post_type_binding {
 	}
 	
 	public static function on_admin_head() {
+		global $CFTPB_ENABLED_POST_TYPES;
+		if (!empty($CFTPB_ENABLED_POST_TYPES)) {
+			$sel = array();
+			foreach ($CFTPB_ENABLED_POST_TYPES as $post_type) {
+				$sel[] = 'a[href*="post-new.php?post_type='.$post_type.'"]';
+			}
+		}
+?>
+<script type="text/javascript">
+jQuery(function ($) {
+	$('<?php echo implode(', ', $sel); ?>').remove();
+});
+</script>
+<?php
+	}
+	
+	public static function on_admin_head_post() {
 		global $current_screen;
 		$connection_settings = array();
 		foreach (self::$taxonomies as $record) {
@@ -252,38 +283,75 @@ class cf_taxonomy_post_type_binding {
 		if (empty($connection_settings)) {
 			return;
 		}
-		?>
-		<style type="text/css">
-			.add-new-h2,
-			#minor-publishing,
-			#delete-action,
-			#publishing-action #ajax-loading {
-				display: none;
+?>
+<style type="text/css">
+.add-new-h2,
+#minor-publishing,
+#delete-action,
+#publishing-action #ajax-loading {
+	display: none;
+}
+#major-publishing-actions #publishing-action {
+	float: left;
+}
+#title.disabled {
+	border: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+#edit-slug-box {
+	padding-left: 0 !important;
+}
+</style>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	$('.add-new-h2, #minor-publishing, #delete-action').remove();
+	$('select#parent_id').addClass('disabled').prop('disabled', true);
+<?php
+		if (!$connection_settings['slave_title_editable']) {
+?>
+	$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
+<?php
+		}
+		if (!$connection_settings['slave_slug_editable']) {
+?>
+	$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
+	$('a.edit-slug').remove();
+<?php
+		}
+?>
+});
+</script>
+<?php
+	}
+	
+	public static function on_admin_head_edit() {
+		global $current_screen;
+		$connection_settings = array();
+		foreach (self::$taxonomies as $record) {
+			if ($record['post_type'] == $current_screen->post_type) {
+				$connection_settings = $record;
+				break;
 			}
-			#major-publishing-actions #publishing-action {
-				float: left;
-			}
-			.disabled {
-				color: #666666 !important;
-				background-color:#CCCCCC !important;
-			}
-		</style>
-		<script type="text/javascript">
-			jQuery(document).ready(function($) {
-				$('.add-new-h2, #minor-publishing, #delete-action').remove();
-				$('select#parent_id').addClass('disabled').prop('disabled', true);
-				<?php if (!$connection_settings['slave_title_editable']) { ?>
-				$('input[name="post_title"]').addClass('disabled').prop('disabled', true);
-				<?php
-				}
-				if (!$connection_settings['slave_slug_editable']) {
-				?>
-				$('input[name="post_name"]').addClass('disabled').prop('disabled', true);
-				$('a.edit-slug').remove();
-				<?php } ?>
-			});
-		</script>
-		<?php
+		}
+		if (empty($connection_settings)) {
+			return;
+		}
+?>
+<style type="text/css">
+div.actions,
+.add-new-h2,
+.row-actions .inline,
+.row-actions .trash {
+	display: none;
+}
+</style>
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	$('div.actions, .add-new-h2, .row-actions .inline, .row-actions .trash').remove();
+});
+</script>
+<?php
 	}
 	
 	public static function on_edit_term($term_id, $tt_id, $taxonomy) {
@@ -379,11 +447,11 @@ class cf_taxonomy_post_type_binding {
 	public static function on_delete_term($term_id, $tt_id, $taxonomy) {
 		$post = self::get_term_post($term_id, $taxonomy);
 		if (is_wp_error($post)) {
-			trigger_error(sprintf(__('Error retrieving post for term "%1$d" in taxonomy "%2$s"', 'cf-tax-post-binding'), $term_id, $taxonomy), E_USER_WARNING);
+			trigger_error(sprintf(__('Error retrieving post for term "%1$d" in taxonomy "%2$s"', 'cf-tax-post-binding'), esc_html($term_id), esc_html($taxonomy)), E_USER_WARNING);
 			return;
 		}
 		else if (empty($post)) {
-			trigger_error(sprintf(__('Could not find post for term "%1$s" in taxonomy "%2$s"', 'cf-tax-post-binding'), $term_id, $taxonomy), E_USER_WARNING);
+			trigger_error(sprintf(__('Could not find post for term "%1$s" in taxonomy "%2$s"', 'cf-tax-post-binding'), esc_html($term_id), esc_html($taxonomy)), E_USER_WARNING);
 			return;
 		}
 		else {
@@ -394,21 +462,24 @@ class cf_taxonomy_post_type_binding {
 	public static function on_tag_row_actions($actions, $tag) {
 		global $taxonomy, $tax;
 		$post = self::get_term_post($tag->term_id, $taxonomy);
-		if (!empty($post) && !is_wp_error($post) && current_user_can($tax->cap->edit_terms)) {
-			if (empty($actions['edit-term-post'])) {
-				$actions['edit-term-post'] = '';
-			}
-			$actions['edit-term-post'] .= '<a href="' . get_edit_post_link($post->ID) . '">' . esc_html(__('Edit Term Post', 'cf-tax-post-binding')) . '</a>';
+		if (empty($post) || is_wp_error($post)) {
+			return $actions;
 		}
+		if (empty($actions['term-post'])) {
+			$actions['term-post'] = '';
+		}
+		if (current_user_can($tax->cap->edit_terms)) {
+			$actions['term-post'] .= '<a href="'.esc_url(get_edit_post_link($post->ID)).'">'.__('Edit Term Post', 'cf-tax-post-binding').'</a> | ';
+		}
+		$actions['term-post'] .= '<a href="'.esc_url(get_permalink($post->ID)).'">'.__('View Term Post', 'cf-tax-post-binding').'</a>';
 		return $actions;
 	}
 	
 	public static function get_term_post($term_id, $taxonomy) {
 		$return_val = null;
-		if (
-			   self::$current_term_post
-			&& self::$current_term_post['term_id'] == $term_id
-			&& self::$current_term_post['taxonomy'] == $taxonomy
+		if (self::$current_term_post && 
+			self::$current_term_post['term_id'] == $term_id &&
+			self::$current_term_post['taxonomy'] == $taxonomy
 		) {
 			$return_val = self::$current_term_post['post'];
 		}
@@ -448,10 +519,14 @@ class cf_taxonomy_post_type_binding {
 	}
 }
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
-add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head');
+add_action('admin_head', 'cf_taxonomy_post_type_binding::on_admin_head');
+add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head_post');
+add_action('admin_head-edit.php', 'cf_taxonomy_post_type_binding::on_admin_head_edit');
 add_action('created_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
 add_action('edit_term', 'cf_taxonomy_post_type_binding::on_edit_term', 10, 3);
 add_action('edited_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
 add_action('edited_term_taxonomies', 'cf_taxonomy_post_type_binding::on_edited_term_taxonomies', 10, 1);
 add_action('delete_term', 'cf_taxonomy_post_type_binding::on_delete_term', 10, 3);
 add_filter('tag_row_actions', 'cf_taxonomy_post_type_binding::on_tag_row_actions', 10, 2);
+
+} // end loaded check
