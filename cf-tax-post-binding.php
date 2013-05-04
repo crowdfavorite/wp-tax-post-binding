@@ -213,8 +213,6 @@ class cf_taxonomy_post_type_binding {
 				
 				// Register the custom post type if it doesn't exist and information was passed to create it.
 				if (empty($post_type) && is_array($config['post_type'])) {
-					global $CFTPB_ENABLED_POST_TYPES;
-					$CFTPB_ENABLED_POST_TYPES[] = $config['post_type'][0];
 					if (!empty($tax_name)) {
 						if (!isset($config['post_type'][1]['hierarchical'])) {
 							$config['post_type'][1]['hierarchical'] = is_taxonomy_hierarchical($tax_name);
@@ -255,11 +253,10 @@ class cf_taxonomy_post_type_binding {
 	}
 	
 	public static function on_admin_head() {
-		global $CFTPB_ENABLED_POST_TYPES;
-		if (!empty($CFTPB_ENABLED_POST_TYPES)) {
+		if (!empty(self::$taxonomies)) {
 			$sel = array();
-			foreach ($CFTPB_ENABLED_POST_TYPES as $post_type) {
-				$sel[] = 'a[href*="post-new.php?post_type='.$post_type.'"]';
+			foreach (self::$taxonomies as $record) {
+				$sel[] = 'a[href*="post-new.php?post_type='.$record['post_type'].'"]';
 			}
 		}
 ?>
@@ -358,6 +355,12 @@ jQuery(document).ready(function($) {
 		self::$term_before = get_term($term_id, $taxonomy);
 	}
 	
+	public static function on_created_term($term_id, $tt_id, $taxonomy) {
+		self::on_edited_term($term_id, $tt_id, $taxonomy);
+		$post = self::get_term_post($term_id, $taxonomy);
+		do_action('cf_taxonomy_post_type_binding_created_post', $post);
+	}
+
 	public static function on_edited_term($term_id, $tt_id, $taxonomy) {
 		if (!self::supports($taxonomy)) {
 			return;
@@ -522,7 +525,7 @@ add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
 add_action('admin_head', 'cf_taxonomy_post_type_binding::on_admin_head');
 add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head_post');
 add_action('admin_head-edit.php', 'cf_taxonomy_post_type_binding::on_admin_head_edit');
-add_action('created_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
+add_action('created_term', 'cf_taxonomy_post_type_binding::on_created_term', 10, 3);
 add_action('edit_term', 'cf_taxonomy_post_type_binding::on_edit_term', 10, 3);
 add_action('edited_term', 'cf_taxonomy_post_type_binding::on_edited_term', 10, 3);
 add_action('edited_term_taxonomies', 'cf_taxonomy_post_type_binding::on_edited_term_taxonomies', 10, 1);
