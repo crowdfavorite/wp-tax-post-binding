@@ -4,7 +4,7 @@
  * Plugin URI: http://crowdfavorite.com
  * Description: Provides extended functionality for taxonomies such as post meta and featured image
  * 	through creating a custom post type.
- * Version: 1.1
+ * Version: 1.1.1
  * Author: Crowd Favorite
  * Author URI: http://crowdfavorite.com
  */
@@ -471,10 +471,14 @@ jQuery(document).ready(function($) {
 		if (empty($actions['term-post'])) {
 			$actions['term-post'] = '';
 		}
+		$new_actions = array();
 		if (current_user_can($tax->cap->edit_terms)) {
-			$actions['term-post'] .= '<a href="'.esc_url(get_edit_post_link($post->ID)).'">'.__('Edit Term Post', 'cf-tax-post-binding').'</a> | ';
+			$new_actions[] = '<a href="'.esc_url(get_edit_post_link($post->ID)).'">'.__('Edit Term Post', 'cf-tax-post-binding').'</a>';
 		}
-		$actions['term-post'] .= '<a href="'.esc_url(get_permalink($post->ID)).'">'.__('View Term Post', 'cf-tax-post-binding').'</a>';
+		if (in_array($post->post_type, get_post_types(array('public'=>true)))) {
+			$new_actions[] = '<a href="'.esc_url(get_permalink($post->ID)).'">'.__('View Term Post', 'cf-tax-post-binding').'</a>';
+		}
+		$actions['term-post'] = implode(' | ', $new_actions);
 		return $actions;
 	}
 	
