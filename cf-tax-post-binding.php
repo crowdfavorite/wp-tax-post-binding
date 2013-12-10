@@ -352,13 +352,17 @@ jQuery(document).ready(function($) {
 	}
 	
 	public static function on_edit_term($term_id, $tt_id, $taxonomy) {
-		self::$term_before = get_term($term_id, $taxonomy);
+		if (self::supports($taxonomy)) {
+			self::$term_before = get_term($term_id, $taxonomy);
+		}
 	}
 	
 	public static function on_created_term($term_id, $tt_id, $taxonomy) {
-		self::on_edited_term($term_id, $tt_id, $taxonomy);
-		$post = self::get_term_post($term_id, $taxonomy);
-		do_action('cf_taxonomy_post_type_binding_created_post', $post);
+		if (self::supports($taxonomy)) {
+			self::on_edited_term($term_id, $tt_id, $taxonomy);
+			$post = self::get_term_post($term_id, $taxonomy);
+			do_action('cf_taxonomy_post_type_binding_created_post', $post);
+		}
 	}
 
 	public static function on_edited_term($term_id, $tt_id, $taxonomy) {
@@ -448,6 +452,9 @@ jQuery(document).ready(function($) {
 	}
 	
 	public static function on_delete_term($term_id, $tt_id, $taxonomy) {
+		if (!self::supports($taxonomy)) {
+			return;
+		}
 		$post = self::get_term_post($term_id, $taxonomy);
 		if (is_wp_error($post)) {
 			trigger_error(sprintf(__('Error retrieving post for term "%1$d" in taxonomy "%2$s"', 'cf-tax-post-binding'), esc_html($term_id), esc_html($taxonomy)), E_USER_WARNING);
@@ -464,6 +471,9 @@ jQuery(document).ready(function($) {
 	
 	public static function on_tag_row_actions($actions, $tag) {
 		global $taxonomy, $tax;
+		if (!self::suppoers($taxonomy)) {
+			return $actions;
+		}
 		$post = self::get_term_post($tag->term_id, $taxonomy);
 		if (empty($post) || is_wp_error($post)) {
 			return $actions;
@@ -484,6 +494,9 @@ jQuery(document).ready(function($) {
 	
 	public static function get_term_post($term_id, $taxonomy) {
 		$return_val = null;
+		if (!self::suppoers($taxonomy)) {
+			return $return_val;
+		}
 		if (self::$current_term_post && 
 			self::$current_term_post['term_id'] == $term_id &&
 			self::$current_term_post['taxonomy'] == $taxonomy
