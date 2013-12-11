@@ -471,7 +471,7 @@ jQuery(document).ready(function($) {
 	
 	public static function on_tag_row_actions($actions, $tag) {
 		global $taxonomy, $tax;
-		if (!self::suppoers($taxonomy)) {
+		if (!self::supports($taxonomy)) {
 			return $actions;
 		}
 		$post = self::get_term_post($tag->term_id, $taxonomy);
