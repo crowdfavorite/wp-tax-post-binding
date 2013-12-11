@@ -494,7 +494,7 @@ jQuery(document).ready(function($) {
 	
 	public static function get_term_post($term_id, $taxonomy) {
 		$return_val = null;
-		if (!self::suppoers($taxonomy)) {
+		if (!self::supports($taxonomy)) {
 			return $return_val;
 		}
 		if (self::$current_term_post && 
