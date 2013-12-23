@@ -4,7 +4,7 @@
  * Plugin URI: http://crowdfavorite.com
  * Description: Provides extended functionality for taxonomies such as post meta and featured image
  * 	through creating a custom post type.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Crowd Favorite
  * Author URI: http://crowdfavorite.com
  */
@@ -416,7 +416,7 @@ jQuery(document).ready(function($) {
 			);
 			if (!empty($term->parent)) {
 				// We need to set the post parent
-				$parent_post = self::get_term_post($term->parent, 'category');
+				$parent_post = self::get_term_post($term->parent, $taxonomy);
 				if (!empty($parent_post) && !is_wp_error($parent_post)) {
 					$insert_post['post_parent'] = $parent_post->ID;
 				}
