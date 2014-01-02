@@ -404,6 +404,9 @@ jQuery(document).ready(function($) {
 				}
 			}
 			wp_update_post($update_post);
+			if (!has_term($term_id, $taxonomy, $post)) {
+				wp_set_post_terms($post->ID, array($term_id), $taxonomy, true);
+			}
 		}
 		else {
 			// Create a new post.
@@ -424,6 +427,7 @@ jQuery(document).ready(function($) {
 			$post_id = wp_insert_post($insert_post);
 			if (!empty($post_id) && !is_wp_error($post_id)) {
 				update_post_meta($post_id, '_cf-tax-post-binding_'.$taxonomy, $term_id);
+				wp_set_post_terms($post_id, array($term_id), $taxonomy, true);
 			}
 		}
 		self::$term_before = null;
