@@ -140,7 +140,8 @@ function cftpb_get_term_id($tax_slug, $post_id = null) {
 }
 
 class cf_taxonomy_post_type_binding {
-	private static $taxonomies;
+	private static $taxonomies = array();
+	private static $post_types = array();
 	private static $current_term_post;
 	private static $term_before;
 
@@ -247,6 +248,10 @@ class cf_taxonomy_post_type_binding {
 					'post_type' => $post_type,
 					'slave_title_editable' => (isset($config['slave_title_editable'])) ? $config['slave_title_editable'] : false,
 					'slave_slug_editable' => (isset($config['slave_slug_editable'])) ? $config['slave_slug_editable'] : false
+				);
+				
+				self::$post_types[$post_type] = array(
+					'taxonomy' => $tax_name,
 				);
 			}
 		}
@@ -541,7 +546,20 @@ jQuery(document).ready(function($) {
 	public static function supports($taxonomy) {
 		return isset(self::$taxonomies[$taxonomy]) ? self::$taxonomies[$taxonomy]['post_type'] : null;
 	}
+	
+	public static function post_link($link, $post) {
+		if (!empty($post) && !empty($post->post_type) && !empty(self::$post_types[$post->post_type])) {
+			$tax = self::$post_types[$post->post_type]['taxonomy'];
+			$terms = wp_get_post_terms($post->ID, $tax, array('fields' => 'ids'));
+			if (!empty($terms) && !is_wp_error($terms)) {
+				$term_id = $terms[0];
+				$link = get_term_link($term_id, $tax);
+			}
+		}
+		return $link;
+	}
 }
+add_filter('post_type_link', 'cf_taxonomy_post_type_binding::post_link', 10, 2);
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
 add_action('admin_head', 'cf_taxonomy_post_type_binding::on_admin_head');
 add_action('admin_head-post.php', 'cf_taxonomy_post_type_binding::on_admin_head_post');
