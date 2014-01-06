@@ -558,7 +558,15 @@ jQuery(document).ready(function($) {
 		}
 		return $link;
 	}
+	
+	public static function cffim_item_thumbnail($thumbnail, $item, $size) {
+		if ($item->type == 'taxonomy' && self::supports($item->object)) {
+			$thumbnail = cftpb_get_the_term_thumbnail($item->object_id, $item->object, $size);
+		}
+		return $thumbnail;
+	}
 }
+add_filter('cffim_item_thumbnail', 'cf_taxonomy_post_type_binding::cffim_item_thumbnail', 10, 3);
 add_filter('post_type_link', 'cf_taxonomy_post_type_binding::post_link', 10, 2);
 add_action('wp_loaded', 'cf_taxonomy_post_type_binding::on_wp_loaded');
 add_action('admin_head', 'cf_taxonomy_post_type_binding::on_admin_head');
