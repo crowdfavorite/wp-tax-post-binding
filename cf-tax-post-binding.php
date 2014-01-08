@@ -576,11 +576,13 @@ jQuery(document).ready(function($) {
 			if ($page < 1) {
 				$page = 1;
 			}
+			$query_orderby = apply_filters('cftpb_tax_archive_orderby', 'title', $tax);
+			$query_order = apply_filters('cftpb_tax_archive_order', 'ASC', $tax);
 			$results_query = new WP_Query(array(
 				'post_type' => $post_type_archive,
 				'post_parent' => 0,
-				'orderby' => 'title',
-				'order' => 'ASC',
+				'orderby' => $query_orderby,
+				'order' => $query_order,
 				'paged' => $page,
 			));
 			$query = $results_query;
