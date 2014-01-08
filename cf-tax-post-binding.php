@@ -602,10 +602,10 @@ jQuery(document).ready(function($) {
 			if (empty($obj->taxonomy) && !empty($obj->label)) {
 				// We're looking at the top level.
 				if ($seplocation == 'right') {
-					$title = $obj->label . " $sep ";
+					$title = apply_filters('the_tax_title', $obj->label, $obj) . " $sep ";
 				}
 				else {
-					$title = " $sep " . $obj->label;
+					$title = " $sep " . apply_filters('the_tax_title', $obj->label, $obj);
 				}
 			}
 		}
