@@ -404,7 +404,7 @@ jQuery(document).ready(function($) {
 			}
 			if (!empty($term->parent)) {
 				// We need to set the post parent
-				$parent_post = self::get_term_post($term->parent, 'category');
+				$parent_post = self::get_term_post($term->parent, $taxonomy);
 				if (!empty($parent_post) && !is_wp_error($parent_post)) {
 					$update_post['post_parent'] = $parent_post->ID;
 				}
