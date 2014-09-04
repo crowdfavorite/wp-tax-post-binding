@@ -154,7 +154,7 @@ class cf_taxonomy_post_type_binding {
 			foreach ($configs as $config) {
 				$tax_name = '';
 				$post_type = '';
-				
+
 				// Validate taxonomy setting
 				if (empty($config['taxonomy'])) {
 					trigger_error(__('A CF Extended Taxonomy configuration is missing its taxonomy. That configuration has been ignored.', 'cf-tax-post-binding'), E_USER_WARNING);
@@ -181,7 +181,7 @@ class cf_taxonomy_post_type_binding {
 						$tax_name = $config['taxonomy'][0];
 					}
 				}
-				
+
 				// Validate post type setting
 				if (empty($config['post_type'])) {
 					trigger_error(__('A CF Extended Taxonomy configuration is missing its post type. That configuration has been ignored.', 'cf-tax-post-binding'), E_USER_WARNING);
@@ -210,7 +210,7 @@ class cf_taxonomy_post_type_binding {
 					trigger_error(__('CF Extended Taxonomy config post_type parameter must be an array. Ignoring this configuration.', 'cf-tax-post-binding'), E_USER_WARNING);
 					continue;
 				}
-				
+
 				// Register the custom post type if it doesn't exist and information was passed to create it.
 				if (empty($post_type) && is_array($config['post_type'])) {
 					if (!empty($tax_name)) {
@@ -234,7 +234,7 @@ class cf_taxonomy_post_type_binding {
 					do_action('cftpb_register_post_type', $config['post_type'][0], $config);
 					$post_type = $config['post_type'][0];
 				}
-				
+
 				if (empty($tax_name) && is_array($config['taxonomy'])) {
 					if (!in_array($post_type, $config['taxonomy'][1])) {
 						$config['taxonomy'][1][] = $post_type;
@@ -242,7 +242,7 @@ class cf_taxonomy_post_type_binding {
 					register_taxonomy($config['taxonomy'][0], $config['taxonomy'][1], $config['taxonomy'][2]);
 					do_action('cftpb_register_taxonomy', $config['taxonomy'][0], $config);
 				}
-				
+
 				self::$taxonomies[$tax_name] = array(
 					'post_type' => $post_type,
 					'slave_title_editable' => (isset($config['slave_title_editable'])) ? $config['slave_title_editable'] : false,
@@ -251,10 +251,10 @@ class cf_taxonomy_post_type_binding {
 			}
 		}
 	}
-	
+
 	public static function on_admin_head() {
+		$sel = array();
 		if (!empty(self::$taxonomies)) {
-			$sel = array();
 			foreach (self::$taxonomies as $record) {
 				$sel[] = 'a[href*="post-new.php?post_type='.$record['post_type'].'"]';
 			}
@@ -267,7 +267,7 @@ jQuery(function ($) {
 </script>
 <?php
 	}
-	
+
 	public static function on_admin_head_post() {
 		global $current_screen;
 		$connection_settings = array();
@@ -321,7 +321,7 @@ jQuery(document).ready(function($) {
 </script>
 <?php
 	}
-	
+
 	public static function on_admin_head_edit() {
 		global $current_screen;
 		$connection_settings = array();
@@ -350,13 +350,13 @@ jQuery(document).ready(function($) {
 </script>
 <?php
 	}
-	
+
 	public static function on_edit_term($term_id, $tt_id, $taxonomy) {
 		if (self::supports($taxonomy)) {
 			self::$term_before = get_term($term_id, $taxonomy);
 		}
 	}
-	
+
 	public static function on_created_term($term_id, $tt_id, $taxonomy) {
 		if (self::supports($taxonomy)) {
 			self::on_edited_term($term_id, $tt_id, $taxonomy);
@@ -428,7 +428,7 @@ jQuery(document).ready(function($) {
 		}
 		self::$term_before = null;
 	}
-	
+
 	public static function on_edited_term_taxonomies($tt_ids) {
 		global $wpdb;
 		if (!empty($tt_ids) && is_array($tt_ids)) {
@@ -450,7 +450,7 @@ jQuery(document).ready(function($) {
 			}
 		}
 	}
-	
+
 	public static function on_delete_term($term_id, $tt_id, $taxonomy) {
 		if (!self::supports($taxonomy)) {
 			return;
@@ -468,7 +468,7 @@ jQuery(document).ready(function($) {
 			wp_delete_post($post->ID, true);
 		}
 	}
-	
+
 	public static function on_tag_row_actions($actions, $tag) {
 		global $taxonomy, $tax;
 		if (!self::supports($taxonomy)) {
@@ -491,13 +491,13 @@ jQuery(document).ready(function($) {
 		$actions['term-post'] = implode(' | ', $new_actions);
 		return $actions;
 	}
-	
+
 	public static function get_term_post($term_id, $taxonomy) {
 		$return_val = null;
 		if (!self::supports($taxonomy)) {
 			return $return_val;
 		}
-		if (self::$current_term_post && 
+		if (self::$current_term_post &&
 			self::$current_term_post['term_id'] == $term_id &&
 			self::$current_term_post['taxonomy'] == $taxonomy
 		) {
@@ -533,7 +533,7 @@ jQuery(document).ready(function($) {
 		}
 		return $return_val;
 	}
-	
+
 	public static function supports($taxonomy) {
 		return isset(self::$taxonomies[$taxonomy]) ? self::$taxonomies[$taxonomy]['post_type'] : null;
 	}
