@@ -325,10 +325,12 @@ jQuery(document).ready(function($) {
 	public static function on_admin_head_edit() {
 		global $current_screen;
 		$connection_settings = array();
-		foreach (self::$taxonomies as $record) {
-			if ($record['post_type'] == $current_screen->post_type) {
-				$connection_settings = $record;
-				break;
+		if ( is_array( self::$taxonomies ) ) {
+			foreach (self::$taxonomies as $record) {
+				if ($record['post_type'] == $current_screen->post_type) {
+					$connection_settings = $record;
+					break;
+				}
 			}
 		}
 		if (empty($connection_settings)) {
