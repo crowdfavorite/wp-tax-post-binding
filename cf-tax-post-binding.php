@@ -19,7 +19,7 @@ function cftpb_get_post($term_id, $taxonomy) {
 	return cf_taxonomy_post_type_binding::get_term_post($term_id, $taxonomy);
 }
 
-function cftpb_get_term_meta($term_id, $taxonomy, $meta_key, $single = false) {
+function cftpb_get_term_meta($term_id, $taxonomy, $meta_key = null, $single = false) {
 	$return_val = '';
 	$term_post = cf_taxonomy_post_type_binding::get_term_post($term_id, $taxonomy);
 	if (!empty($term_post) && !is_wp_error($term_post)) {
